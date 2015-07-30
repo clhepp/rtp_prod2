@@ -33,14 +33,16 @@ klayers_exec = '/asl/packages/klayersV205/BinV201/klayers_airs_wetwater';
 sarta_exec   = '/asl/packages/sartaV108/BinV201/sarta_iasi_may09_wcon_nte';
 
 % add dependency paths
-addpath /asl/rtp_prod2/grib       % fill_ecmwf.m fill_era.m
-addpath /asl/rtp_prod2/emis       % rtp_add_emis_single.m
-addpath /asl/rtp_prod2/util       % seq_match.m, rtpadd_usgs_10dem.m
-addpath /asl/matlib/rtptools      % set_attr.m
+% ********  run paths.m first *************
+%addpath /asl/rtp_prod2/grib       % fill_ecmwf.m fill_era.m
+%addpath /asl/rtp_prod2/emis       % rtp_add_emis_single.m
+%addpath /asl/rtp_prod2/util       % seq_match.m, rtpadd_usgs_10dem.m
+%addpath /asl/matlib/rtptools      % set_attr.m
 
 % Generate save file from input file: (expect: IASI_xxx_1C_M02_20130101000254Z_20130101000557Z)
 clear savPath;
-savPath = '/asl/s1/chepplew/projects/iasi/rtpprod/';
+%%savPath = '/asl/s1/chepplew/projects/iasi/rtpprod/';
+savPath = ['/asl/data/rtp_iasi1/' subset '/'];
 [pathstr,fnamin,ext] = fileparts(fnIasiIn);
 [pparts,pmatches]    = strsplit(pathstr,'/');      % parts 6=year, 7=mon, 8=day.
 [fparts,fmatches]    = strsplit(fnamin,'_');       % part 5=granule start time.
