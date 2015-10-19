@@ -4,7 +4,15 @@
 %
 % Start with fill_ecmwf.m and modify for ERA
 
-function [prof, head] = fill_era(prof, head)
+function [prof, head, pattr] = fill_era(prof, head, pattr)
+
+% Check args in and out to see if they conform to the new API and
+% aren't split between old and new styles
+if nargin ~= nargout
+    error(['>>> ERROR: mismatch between fill_era inputs and ' ...
+           'outputs.\n\tUse either [p,h]=fill_era(p,h) or ' ...
+           '[p,h,pa]=fill_era(p,h,pa) (preferred)\n\tTerminating'], '\n')
+end
 
 addpath /asl/matlib/aslutil
 addpath /asl/packages/time
@@ -53,11 +61,14 @@ for i=1:n
    end   
 % Fill rtp fields
    m = find( ic == i );  % indices of first era file
+   fhi = 0;
    u_hour = unique(hourindex);
    nn = length(u_hour);
-   for fhi = 1:nn
-       l = find( hourindex == u_hour(fhi));
-       k = intersect(l,m);       
+   for jj = 1:nn
+       fhi = 1;
+       l = find( hourindex == u_hour(jj));
+       k = intersect(l,m);
+       if k > 0
    
 % Assume rtp lat/lon are +-180??  Need to be 0-360 for grib interpolation
        rlat = prof.rlat(k);
@@ -70,7 +81,7 @@ for i=1:n
        wind_u          = F(fhi).u10.ig(rlat,rlon);
        prof.wspeed(k)  = sqrt(wind_u.^2 + wind_v).^2;
        prof.wsource(k) = mod(atan2(single(wind_u), single(wind_v)) * 180/pi,360);
-       prof.cfrac(k)   = F(fhi).tcc.ig(rlat,rlon);
+       prof.tcc(k)   = F(fhi).tcc.ig(rlat,rlon);
        ci_udef = 1;
        prof.udef(ci_udef,k) = F(fhi).ci.ig(rlat,rlon);
 % Estimate model grid centers used
@@ -84,7 +95,6 @@ for i=1:n
 % Hybrid parameters
 % levid = 1 is top of atmosphere
 % b are the sortedd level IDs   
-%       prof.nlevs = ones(1,length(k))*length(F(fhi).levid);
        [b,j]=sort(F(fhi).levid);
        for l=1:length(F(fhi).levid)
           prof.ptemp(l,k) = F(fhi).t(j(l)).ig(rlat,rlon);
@@ -100,6 +110,7 @@ for i=1:n
        prof.nlevs(k) = length(F(fhi).levid);
    end
    fhi = fhi + 1;
+   end  % k loop
 end
 prof.nlevs = int32(prof.nlevs);
 
@@ -135,11 +146,21 @@ if isfield(prof,'gas_3')
   end
 end
 %  fix any cloud frac
-if isfield(prof,'cfrac')
-  ibad = find(prof.cfrac > 1);
+if isfield(prof,'tcc')
+  ibad = find(prof.tcc > 1);
   nbad = length(ibad);
   if (nbad > 0)
-    prof.cfrac(ibad) = 1;
-%    say(['Replaced ' int2str(nbad) ' CFRAC > 1 fields'])
+    prof.tcc(ibad) = 1;
+%    say(['Replaced ' int2str(nbad) ' TCC > 1 fields'])
   end
+end
+
+switch nargin
+  case 2
+    fprintf(2, ['>>> WARNING: fill_era now sets model attribute in ' ...
+                'pattr.\n\tUpdate calls to fill_era to include pattr. ' ...
+                'i.e. [p,h,pa] = fill_era(p,h,pa)\n'])
+  case 3
+    % set an attribute string to let the rtp know what we have done
+    pattr = set_attr(pattr,'model','era');
 end
